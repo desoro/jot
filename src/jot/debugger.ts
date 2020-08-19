@@ -1,4 +1,4 @@
-import { Jot } from './jot';
+import Jot from './jot';
 
 class JotDebugger {
   constructor(server: Jot) {
@@ -15,16 +15,24 @@ class JotDebugger {
     server.on('connection', (socket) => {
       console.log('a user connected');
 
-      socket.on('message', (type, size) => {
-        console.log(`user sent message (${type}, ${size})`);
+      socket.on('send_info', (type, size) => {
+        if (type > 9) {
+          console.log(`sent (${type}, ${size})`);
+        }
+      });
+
+      socket.on('receive_info', (type, size) => {
+        if (type > 9) {
+          console.log(`received (${type}, ${size})`);
+        }
       });
     
       socket.on('disconnect', (reason) => {
         console.log(`user disconnected, reason: ${reason}`);
       });  
 
-      socket.on('error', (error) => {
-        console.log(`SOCKET ERROR: ${error}`);
+      socket.on('error', (heading, error) => {
+        console.log(heading, error);
       });  
     });    
   }

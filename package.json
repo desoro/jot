@@ -1,11 +1,11 @@
 {
   "name": "@desoro/jot",
-  "version": "1.0.1",
+  "version": "1.0.10",
   "description": "Game Server",
   "author": "Desoro",
   "license": "ISC",
-  "main": "dist/jot.js",
-  "types": "dist/jot.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "build": "rimraf dist/ && tsc",
     "tsc": "tsc"

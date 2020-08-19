@@ -48,5 +48,4 @@ class Jot extends EventEmitter {
   }
 }
 
-export { Jot };
-export default new Jot();
+export default Jot;

@@ -10,13 +10,17 @@ class SocketManager {
     this.activeSockets = {};
   }
 
+  /**
+   * Retrieves a new managed socket.
+   * @param nodeSocket - The node net socket.
+   */
   getSocket(nodeSocket: Socket) {
     const socketId = ++this.lastSocketId;
     const jotSocket = new JotSocket(socketId, nodeSocket);
 
     this.activeSockets[socketId] = jotSocket;
 
-    nodeSocket.on('disconnect', () => {
+    jotSocket.on('disconnect', () => {
       delete this.activeSockets[socketId];
     });
 

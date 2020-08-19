@@ -1,3 +1,4 @@
+import Vector from "./vector";
 
 const bufferPool = Array(100).fill(new ArrayBuffer(8192), 0, 100);
 const encoder = new TextEncoder();
@@ -13,6 +14,9 @@ class NetworkWriteData {
     this.position = 0;
   }
 
+  /**
+   * Current position of the writer.
+   */
   get length() {
     return this.position;
   }
@@ -59,42 +63,55 @@ class NetworkWriteData {
     return this;
   }
 
+  /**
+   * Js representation of ulong ints
+   */
   ulong(value: number) {
     this.view.setBigUint64(this.position, BigInt(value), true);
     this.position += 8;
     return this;
   }
 
+  /**
+   * Js representation of long ints
+   */
   long(value: number) {
     this.view.setBigInt64(this.position, BigInt(value), true);
     this.position += 8;
     return this;
   }
 
-  vector(value: { x: number; y: number; }) {
+  /**
+   * 2d int16 vectors rounded to the tenth
+   * @param x - Range(-3276.7, 3276.7)
+   * @param y - Range(-3276.7, 3276.7)
+   */
+  vector(value: Vector) {
     this.short(value.x * 10);
     this.short(value.y * 10);
     return this;
   }
 
-  string(value: string, cleanControls?: boolean) {   
-    if (cleanControls) {
-      value = value.replace(/[\x00\x08]/u, '');
-    }
-
+  string(value: string) {   
     this.ubyte(value.length);
-    const view = new Uint8Array(this.buffer, this.position, value.length);
-    encoder.encodeInto(value, view);
+    const stringView = new Uint8Array(this.buffer, this.position, value.length);
+    encoder.encodeInto(value, stringView);
     this.position += value.length;    
     return this;
   }
 
-  nest(callback: (writer: NetworkWriteData) => void) {
+  /**
+   * Nests and returns an additional writer.
+   */
+  nest(callback: (data: NetworkWriteData) => void) {
     const nested = new NetworkWriteData();
     callback(nested);
     this.bytes(nested.close());
   }
 
+  /**
+   * Offsets the given ArrayBuffer into the writer.
+   */
   bytes(array: ArrayBuffer) {
     const view = new Uint8Array(this.buffer);
     view.set(new Uint8Array(array), this.position);
@@ -102,6 +119,9 @@ class NetworkWriteData {
     return this;
   }  
 
+  /**
+   * Closes editing and returns a new ArrayBuffer sliced from the current position.
+   */
   close() {
     const array = this.buffer.slice(0, this.position);
     bufferPool.push(this.buffer);

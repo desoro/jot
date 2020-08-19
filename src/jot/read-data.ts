@@ -1,3 +1,4 @@
+import Vector from "./vector";
 
 const decoder = new TextDecoder();
 
@@ -54,23 +55,29 @@ class NetworkReadData {
     return value;
   }
 
+  /**
+   * Js representation of long ints
+   */
   ulong() {
     const value = this.view.getBigUint64(this.position, true);
     this.position += 8;
     return Number(value);
   }
 
+  /**
+   * Js representation of long ints
+   */
   long() {
     const value = this.view.getBigInt64(this.position, true);
     this.position += 8;
     return Number(value);
   }
 
+  /**
+   * 2d int16 vectors rounded to the tenth
+   */
   vector() {
-    return {
-      x: this.short() / 10,
-      y: this.short() / 10
-    }
+    return new Vector(this.short() / 10, this.short() / 10);
   }
 
   string() {
@@ -81,6 +88,9 @@ class NetworkReadData {
     return value;
   }
 
+  /**
+   * Attachs and return new reader for nested data.
+   */
   data() {
     const length = this.ushort();
     const view = new Uint8Array(this.buffer, this.position, length);

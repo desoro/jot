@@ -1,3 +1,6 @@
 
 src/
 node_modules/
+.gitattributes
+.gitignore
+tsconfig.json

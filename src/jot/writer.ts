@@ -11,6 +11,9 @@ class NetworkWriter {
     this.data.ushort(0); // content size placeholder
   }
 
+  /**
+   * Finalizes the header and returns a Buffer to write to the Socket
+   */
   pack() {
     // header = 3 bytes
     const contentSize = this.data.length - 3;
