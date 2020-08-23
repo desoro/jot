@@ -1,17 +1,21 @@
 import Vector from "./vector";
+import Pool, { PoolObject } from "./pool";
 
 const decoder = new TextDecoder();
 
-class NetworkReadData {
-  private buffer: ArrayBuffer;
-  private view: DataView;
-  private position: number;
+class NetworkReadData implements PoolObject {
+  static readonly pool: Pool<NetworkReadData> = new Pool(NetworkReadData, 25);
+  private buffer!: ArrayBuffer;
+  private view!: DataView;
+  private position!: number;
 
-  constructor(buffer: ArrayBuffer) {
+  enable(buffer: ArrayBuffer) {
     this.buffer = buffer;
     this.view = new DataView(buffer);
     this.position = 0;
   }
+
+  disable() {}
 
   bool() {
     const value = this.view.getUint8(this.position);
@@ -91,11 +95,14 @@ class NetworkReadData {
   /**
    * Attachs and return new reader for nested data.
    */
-  data() {
+  nested(handler: (data: NetworkReadData) => void) {
     const length = this.ushort();
     const view = new Uint8Array(this.buffer, this.position, length);
     this.position += length;
-    return new NetworkReadData(view.buffer);
+
+    const nested = NetworkReadData.pool.retrieve(NetworkReadData, view.buffer);
+    handler(nested);
+    NetworkReadData.pool.release(nested);
   }
 }
 

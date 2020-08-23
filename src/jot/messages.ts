@@ -1,6 +1,8 @@
 
-export default Object.seal({
-  Ping: 1,
-  Pong: 2,
-  Error: 3
-});
+class Messages {
+  static readonly Ping = 1;
+  static readonly Pong = 2;
+  static readonly Error = 3;
+}
+
+export default Messages;

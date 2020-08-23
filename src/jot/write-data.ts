@@ -1,18 +1,24 @@
 import Vector from "./vector";
+import Pool, { PoolObject } from "./pool";
 
-const bufferPool = Array(100).fill(new ArrayBuffer(8192), 0, 100);
 const encoder = new TextEncoder();
 
-class NetworkWriteData {
+class NetworkWriteData implements PoolObject {
+  static readonly pool: Pool<NetworkWriteData> = new Pool(NetworkWriteData, 25);
   private buffer: any;
   public readonly view: DataView;
-  private position: number;
+  private position!: number;
 
   constructor() {
-    this.buffer = bufferPool.shift() || new ArrayBuffer(8192);
-    this.view = new DataView(this.buffer);
+    this.buffer = new ArrayBuffer(8192);
+    this.view = new DataView(this.buffer);    
+  }
+
+  enable() {
     this.position = 0;
   }
+
+  disable() { }
 
   /**
    * Current position of the writer.
@@ -103,10 +109,11 @@ class NetworkWriteData {
   /**
    * Nests and returns an additional writer.
    */
-  nest(callback: (data: NetworkWriteData) => void) {
-    const nested = new NetworkWriteData();
-    callback(nested);
+  nest(handler: (data: NetworkWriteData) => void) {
+    const nested = NetworkWriteData.pool.retrieve(NetworkWriteData);
+    handler(nested);
     this.bytes(nested.close());
+    NetworkWriteData.pool.release(nested);
   }
 
   /**
@@ -124,7 +131,6 @@ class NetworkWriteData {
    */
   close() {
     const array = this.buffer.slice(0, this.position);
-    bufferPool.push(this.buffer);
     return array;
   }
 }

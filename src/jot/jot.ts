@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events';
 import { createServer } from 'net';
 import JotDebugger from './debugger';
+import Pool from './pool';
 import JotSocket from './socket';
 import config, { JotConfigLike } from './config';
-import socketManager from './socket-manager';
 
 declare interface Jot {
   on(event: "connection", listener: (socket: JotSocket) => void): this;
@@ -11,10 +11,10 @@ declare interface Jot {
   on(event: "listening", listener: (port: number) => void): this;
 }
 
-class Jot extends EventEmitter {  
-  constructor() {
-    super();
-  }
+class Jot extends EventEmitter {
+  private lastSocketId: number = 0;
+  private readonly activeSockets: { [id: number]: JotSocket } = {};  
+  private socketPool!: Pool<JotSocket>;
 
   /**
    * Starts the Jot server listening.
@@ -30,11 +30,21 @@ class Jot extends EventEmitter {
 
     const server = createServer();
 
-    server.maxConnections = config.maxConnections;    
+    server.maxConnections = config.maxConnections; 
+    
+    this.socketPool = new Pool(JotSocket, config.maxConnections);
 
     server.on('connection', (nodeSocket) => {    
-      const jotSocket = socketManager.getSocket(nodeSocket);
+      const socketId = ++this.lastSocketId;
+      const jotSocket = this.socketPool.retrieve(socketId, nodeSocket);
+      this.activeSockets[socketId] = jotSocket;
+
       this.emit('connection', jotSocket);
+
+      jotSocket.on('disconnect', () => {
+        delete this.activeSockets[socketId];
+        this.socketPool.release(jotSocket);
+      });
     });
 
     server.on('error', (error) => {
